@@ -3,15 +3,41 @@
 # Opis: szyfrowanie plikow
 # Autor: Bartosz Pacyga
 # Data: 2025-03-05
-# Wersja: 0.1  
+# Wersja: 0.2  
 
 #funckja do szyfrowania pojedynczego pliku
 szyfruj_plik() {
-    echo "szyfruje plik ..."
+    local algorytm=$1
+    local haslo=$2
+
+    #wybieranie konkretnego pliku przy pomocy zenity
+    plik=$(zenity --file-selection --title="Wybierz plik ktory chcesz zaszyfrowac" || blad "Blad przy wybieraniu pliku")
+    openssl enc -"$algorytm" -in "$plik" -out "${plik}.enc" -pass pass:"$haslo" &&
+    zenity --info --text="Zaszyfrowano: ${plik}.enc"
+
+    #dodatkowe usuniecie pliku ktory jest szyfrowany
+    zenity --question --text="Czy usunac oryginalny plik: $plik?"
+    if [[ $? -eq 0 ]]; then
+        rm "$plik"
+        zenity --info --text="Usunieto: $plik"
+    fi
 }
 
 deszyfruj_plik() {
-    echo "deszyfruje plik ..."
+    local algorytm=$1
+    local haslo=$2
+
+    plik=$(zenity --file-selection --title="Wybierz plik .enc do odszyfrowania" --file-filter="*.enc") || blad "Blad przy wybieraniu pliku"
+    output="${plik%.enc}"
+    openssl enc -d -"$algorytm" -in "$plik" -out "$output" -pass pass:"$haslo" &&
+    zenity --info --text="Odszyfrowano: $output"
+
+    #dodatkowe usuniecie pliku ktory deszyfrujemy
+    zenity --question --text="Czy usunac plik: $plik?"
+    if [[ $? -eq 0 ]]; then
+        rm "$plik"
+        zenity --info --text="Usunieto: $plik"
+    fi
 }
 
 szyfruj_katalog() {
@@ -52,5 +78,5 @@ case "$opcja" in
     "Deszyfruj plik") deszyfruj_plik "$algorytm" "$haslo" ;;
     "Szyfruj katalog") szyfruj_katalog "$algorytm" "$haslo" ;;
     "Szyfruj wg wzorca") szyfruj_wzorzec "$algorytm" "$haslo" ;;
-    "Wyjście") exit 0 ;;
+    "Wyjscie") exit 0 ;;
 esac
