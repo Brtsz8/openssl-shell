@@ -5,6 +5,16 @@
 # Data: 2025-03-05
 # Wersja: 0.2  
 
+czy_usun_plik() {
+    local plik=$1
+
+    zenity --question --text="Czy usunac plik: $plik?"
+    if [[ $? -eq 0 ]]; then
+        rm "$plik"
+        zenity --info --text="Usunieto: $plik"
+    fi
+}
+
 #funckja do szyfrowania pojedynczego pliku
 szyfruj() {
     local algorytm=$1
@@ -16,21 +26,7 @@ szyfruj() {
     zenity --info --text="Zaszyfrowano: ${plik}.enc"
 
     #dodatkowe usuniecie pliku ktory jest szyfrowany
-    zenity --question --text="Czy usunac oryginalny plik: $plik?"
-    if [[ $? -eq 0 ]]; then
-        rm "$plik"
-        zenity --info --text="Usunieto: $plik"
-    fi
-}
-
-czy_usun_plik() {
-    local plik=$1
-
-    zenity --question --text="Czy usunac plik: $plik?"
-    if [[ $? -eq 0 ]]; then
-        rm "$plik"
-        zenity --info --text="Usunieto: $plik"
-    fi
+    czy_usun_plik $plik
 }
 
 deszyfruj() {
@@ -58,6 +54,19 @@ szyfruj_pliki() {
     done
 }
 
+deszyfruj_pliki() {
+    local algorytm=$1
+    local haslo=$2
+    
+    katalog=$(zenity --file-selection --directory --title="Wybierz katalog ktorego zawartosc ma byc zaszyfrowana") || blad "Blad przy wyborze katalogu"
+    #tutaj powinna byc dodana funkcjonalnosc typu szyfrowanie podkatalogow w wybranym katalogu
+    for plik in "$katalog"/*; do
+        output="${plik%.enc}"
+        [[ -f "$plik" ]] && openssl enc -d -"$algorytm" -in "$plik" -out "$output" -pass pass:"$haslo"
+        czy_usun_plik $plik
+    done
+}
+
 szyfruj_katalog() {
     echo "szyfruje katalog ..."
 }
@@ -79,6 +88,7 @@ opcja=$(zenity --list --radiolist \
   TRUE "Szyfruj plik" \
   FALSE "Deszyfruj plik" \
   FALSE "Szyfruj pliki w katalogu" \
+  FALSE "Deszyfruj pliki w katalogu" \
   FALSE "Szyfruj katalog" \
   FALSE "Szyfruj wg wzorca" \
   FALSE "Wyjscie") || blad "Nie wybrano zadnej opcji."
@@ -96,6 +106,7 @@ case "$opcja" in
     "Szyfruj plik") szyfruj "$algorytm" "$haslo" ;;
     "Deszyfruj plik") deszyfruj "$algorytm" "$haslo" ;;
     "Szyfruj pliki w katalogu") szyfruj_pliki "$algorytm" "$haslo" ;;
+    "Deszyfruj pliki w katalogu") deszyfruj_pliki "$algorytm" "$haslo" ;;
     "Szyfruj katalog") szyfruj_katalog "$algorytm" "$haslo" ;;
     "Szyfruj wg wzorca") szyfruj_wzorzec "$algorytm" "$haslo" ;;
     "Wyjscie") exit 0 ;;
