@@ -67,7 +67,27 @@ deszyfruj_pliki() {
 }
 
 szyfruj_katalog() {
-    echo "szyfruje katalog ..."
+    local algorytm=$1
+    local haslo=$2
+
+    katalog=$(zenity --file-selection --directory --title="Wybierz katalog do szyfrowania") || blad "Blad przy wyborze katalogu"
+
+    nazwa=$(basename "$katalog")
+    sciezka=$(dirname "$katalog")
+    archiwum="${sciezka}/${nazwa}.tar.gz"
+    output="${archiwum}.enc"
+
+    #spakowanie katalogu
+    tar czf "$archiwum" -C "$sciezka" "$nazwa" || blad "Nie udalo sie spakowac katalogu"
+
+    #szyfrowanie archiwum
+    openssl enc -"$algorytm" -in "$archiwum" -out "$output" -pass pass:"$haslo" || blad "Szyfrowanie archiwum nie powiodlo sie"
+
+    #usniecie archiwum (to powinno byc w sumie w folderze temp - trzeba to zmienic)
+    rm "$archiwum"
+
+    zenity --info --text="Zaszyfrowano wybrany katalog jako: $output"
+    czy_usun_plik $katalog
 }
 
 deszyfruj_katalog() {
@@ -99,7 +119,7 @@ opcja=$(zenity --list --radiolist \
 
 # Algorytm
 algorytm=$(zenity --list --radiolist --column="Wybror" --column="Algorytm" \
-    --title="Wybierz algorytm" --text="Wybierz algorytm przy pomocy ktorego z--width=500 --height=700 \
+    --title="Wybierz algorytm" --text="Wybierz algorytm przy pomocy ktorego zaszyfrowany bedzie plik" --width=500 --height=700 \
     TRUE "aes-256-cbc" \
     FALSE "aes-192-cbc" \
     FALSE "aes-128-cbc" \
