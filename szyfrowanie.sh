@@ -59,7 +59,6 @@ deszyfruj_pliki() {
     local haslo=$2
     
     katalog=$(zenity --file-selection --directory --title="Wybierz katalog ktorego zawartosc ma byc zaszyfrowana") || blad "Blad przy wyborze katalogu"
-    #tutaj powinna byc dodana funkcjonalnosc typu szyfrowanie podkatalogow w wybranym katalogu
     for plik in "$katalog"/*; do
         output="${plik%.enc}"
         [[ -f "$plik" ]] && openssl enc -d -"$algorytm" -in "$plik" -out "$output" -pass pass:"$haslo"
@@ -69,6 +68,10 @@ deszyfruj_pliki() {
 
 szyfruj_katalog() {
     echo "szyfruje katalog ..."
+}
+
+deszyfruj_katalog() {
+    echo "deszyfruje katalog ..."
 }
 
 szyfruj_wzorzec() {
@@ -90,11 +93,20 @@ opcja=$(zenity --list --radiolist \
   FALSE "Szyfruj pliki w katalogu" \
   FALSE "Deszyfruj pliki w katalogu" \
   FALSE "Szyfruj katalog" \
+  FALSE "Deszyfruj katalog" \
   FALSE "Szyfruj wg wzorca" \
   FALSE "Wyjscie") || blad "Nie wybrano zadnej opcji."
 
 # Algorytm
-algorytm=$(zenity --entry --title="Algorytm" --text="Wprowadz algorytm (np. aes-256-cbc):" --entry-text="aes-256-cbc") || blad "Nie wprowadzono algorytmu."
+algorytm=$(zenity --list --radiolist --column="Wybror" --column="Algorytm" \
+    --title="Wybierz algorytm" --text="Wybierz algorytm przy pomocy ktorego z--width=500 --height=700 \
+    TRUE "aes-256-cbc" \
+    FALSE "aes-192-cbc" \
+    FALSE "aes-128-cbc" \
+    FALSE "aes-256-ctr" \
+    FALSE "aes-128-ctr" \
+    FALSE "camellis-256-cbc" \
+    FALSE "des3") || blad "Nie wybrano algorytmu!"
 [[ -z "$algorytm" ]] && blad "Algorytm nie moze byc pusty."
 
 # Haslo
@@ -108,6 +120,7 @@ case "$opcja" in
     "Szyfruj pliki w katalogu") szyfruj_pliki "$algorytm" "$haslo" ;;
     "Deszyfruj pliki w katalogu") deszyfruj_pliki "$algorytm" "$haslo" ;;
     "Szyfruj katalog") szyfruj_katalog "$algorytm" "$haslo" ;;
+    "Deszyfruj katalog") deszyfruj_katalog "$algorytm" "$haslo" ;;
     "Szyfruj wg wzorca") szyfruj_wzorzec "$algorytm" "$haslo" ;;
     "Wyjscie") exit 0 ;;
 esac
