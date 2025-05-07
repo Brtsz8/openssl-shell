@@ -2,9 +2,10 @@
 # Nazwa skryptu: szyfrowanie.sh
 # Opis: szyfrowanie plikow
 # Autor: Bartosz Pacyga
-# Data: 2025-03-05
-# Wersja: 0.2  
+# Data: 2025-03-07
+# Wersja: 0.25
 
+#pyta uzytkownika czy plik powinien byc usuniety
 czy_usun_plik() {
     local plik=$1
 
@@ -15,7 +16,7 @@ czy_usun_plik() {
     fi
 }
 
-#funckja do szyfrowania pojedynczego pliku
+#szyfrowanie pojedynczego pliku
 szyfruj() {
     local algorytm=$1
     local haslo=$2
@@ -29,6 +30,7 @@ szyfruj() {
     czy_usun_plik $plik
 }
 
+#deszyfrowanie pojedynczego pliku
 deszyfruj() {
     local algorytm=$1
     local haslo=$2
@@ -42,6 +44,7 @@ deszyfruj() {
     czy_usun_plik $plik
 }
 
+#szyfruje wszystkie pliki w wybranym folderze
 szyfruj_pliki() {
     local algorytm=$1
     losal haslo=$2
@@ -54,6 +57,7 @@ szyfruj_pliki() {
     done
 }
 
+#deszyfruje wszystkie pliki w wybranym folderze
 deszyfruj_pliki() {
     local algorytm=$1
     local haslo=$2
@@ -66,6 +70,7 @@ deszyfruj_pliki() {
     done
 }
 
+#szyfruje caly katalog, najpierw pakujac go w jeden plik
 szyfruj_katalog() {
     local algorytm=$1
     local haslo=$2
@@ -90,18 +95,25 @@ szyfruj_katalog() {
     czy_usun_plik $katalog
 }
 
+#deszyfruje caly katalog, po czym rozpakowuje go (bo byl spakowany w funkcji szyfruj katalog)
 deszyfruj_katalog() {
     echo "deszyfruje katalog ..."
 }
 
+#szyfruje pliki wedlug wzorca
 szyfruj_wzorzec() {
     echo "szyfruje wzorzec ..."
 }
 
-# Funkcja bledu
+#deszyfruje plik wedlug wzorca
+deszyfruj_wzorzec() {
+    echo "deszyfruje wzorzec ..."
+}
+
+# Funkcja wyswietla przekazany do niej blad bledu
 blad() {
     zenity --error --text="$1"
-    exit 1
+    ./szyfrowanie.sh    #restartuje program
 }
 
 # Glowne menu
@@ -115,6 +127,7 @@ opcja=$(zenity --list --radiolist \
   FALSE "Szyfruj katalog" \
   FALSE "Deszyfruj katalog" \
   FALSE "Szyfruj wg wzorca" \
+  FALSE "Deszyfruj wg wzorca" \
   FALSE "Wyjscie") || blad "Nie wybrano zadnej opcji."
 
 # Algorytm
@@ -142,5 +155,6 @@ case "$opcja" in
     "Szyfruj katalog") szyfruj_katalog "$algorytm" "$haslo" ;;
     "Deszyfruj katalog") deszyfruj_katalog "$algorytm" "$haslo" ;;
     "Szyfruj wg wzorca") szyfruj_wzorzec "$algorytm" "$haslo" ;;
+    "Deszyfruj wg wzorca") deszyfruj_wzorzec "$algorytm" "$haslo" ;;
     "Wyjscie") exit 0 ;;
 esac
