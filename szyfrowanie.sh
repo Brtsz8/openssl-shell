@@ -116,19 +116,42 @@ blad() {
     ./szyfrowanie.sh    #restartuje program
 }
 
-# Glowne menu
-opcja=$(zenity --list --radiolist \
-  --title="Szyfrowanie i deszyfrowanie" \
-  --column="Wybor" --column="Operacja" \
-  TRUE "Szyfruj plik" \
-  FALSE "Deszyfruj plik" \
-  FALSE "Szyfruj pliki w katalogu" \
-  FALSE "Deszyfruj pliki w katalogu" \
-  FALSE "Szyfruj katalog" \
-  FALSE "Deszyfruj katalog" \
-  FALSE "Szyfruj wg wzorca" \
-  FALSE "Deszyfruj wg wzorca" \
-  FALSE "Wyjscie") || blad "Nie wybrano zadnej opcji."
+#MENU GLOWNE PROGRAMU
+
+#wybor sposobu dzialania programu
+kategoria=$(zenity --list --radiolist \
+  --title="Wybierz tryb:" \
+  --column="Wybor" --column="Kategoria" \
+  TRUE "Szyfrowanie" \
+  FALSE "Deszyfrowanie" \
+  FALSE "Wyjscie") || blad "Nie wybrano kategorii."
+
+#wybor konkretnej opcji
+case "$kategoria" in
+  "Szyfrowanie")
+    opcja=$(zenity --list --radiolist \
+      --title="Szyfrowanie - wybierz operacje" \
+      --column="Wybor" --column="Operacja" \
+      TRUE "Szyfruj plik" \
+      FALSE "Szyfruj pliki w katalogu" \
+      FALSE "Szyfruj katalog" \
+      FALSE "Szyfruj wg wzorca") || blad "Nie wybrano operacji."
+    ;;
+  
+  "Deszyfrowanie")
+    opcja=$(zenity --list --radiolist \
+      --title="Deszyfrowanie - wybierz operacje" \
+      --column="Wybor" --column="Operacja" \
+      TRUE "Deszyfruj plik" \
+      FALSE "Deszyfruj pliki w katalogu" \
+      FALSE "Deszyfruj katalog" \
+      FALSE "Deszyfruj wg wzorca") || blad "Nie wybrano operacji."
+    ;;
+  
+  "Wyjscie")
+    exit 0
+    ;;
+esac
 
 # Algorytm
 algorytm=$(zenity --list --radiolist --column="Wybror" --column="Algorytm" \
@@ -156,5 +179,4 @@ case "$opcja" in
     "Deszyfruj katalog") deszyfruj_katalog "$algorytm" "$haslo" ;;
     "Szyfruj wg wzorca") szyfruj_wzorzec "$algorytm" "$haslo" ;;
     "Deszyfruj wg wzorca") deszyfruj_wzorzec "$algorytm" "$haslo" ;;
-    "Wyjscie") exit 0 ;;
 esac
