@@ -5,7 +5,7 @@
 # Data: 2025-03-09
 # Wersja: 0.3
 
-Wersja="0.3"
+source ./args.sh
 
 #pyta uzytkownika czy plik powinien byc usuniety
 czy_usun_plik() {
@@ -145,27 +145,7 @@ blad() {
     ./szyfrowanie.sh    #restartuje program
 }
 
-#Sprawdzanie opcji
-while [[ "$1" =~ ^- ]]; do
-    case "$1" in
-        -h|--help)
-            echo "Opcje:"
-            echo " -h, --help       Wyswietl pomoc"
-            echo " -v, --version    Wyswietla weersje programu"
-            exit 0 
-            ;;
-        -v|--version)
-            echo "$0 - wersja $Wersja"
-            exit 0
-            ;;
-        *)
-            echo "Nieznana opcja: $1"
-            echo "Uzyj -h lub --help, aby uzyskac pomoc."
-            exit 1
-            ;;
-    esac
-    shift
-done
+obsluga_argumentow "$@"
 #MENU GLOWNE PROGRAMU
 #wybor sposobu dzialania programu
 kategoria=$(zenity --list --radiolist \
@@ -174,10 +154,6 @@ kategoria=$(zenity --list --radiolist \
   TRUE "Szyfrowanie" \
   FALSE "Deszyfrowanie" \
   FALSE "Wyjscie") || blad "Nie wybrano kategorii."
-
-haslo=$(podaj_haslo)
-echo "Haslo:"
-echo $haslo
 
 #wybor konkretnej opcji
 case "$kategoria" in
