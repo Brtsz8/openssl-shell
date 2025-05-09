@@ -22,24 +22,34 @@ czy_usun_plik() {
 podaj_haslo() {
     haslo=$(zenity --password --title="Podaj haslo" \
     --text="Podaj haslo ktore zostanie uzyte do szyfrowania/deszyfrowania") || blad "Nie wybrano hasla."
-
+    [[ -z "$haslo" ]] && blad "Haslo nie moze byc puste"
     echo "$haslo"
 }
 
 #funkcja prosi urzytkownika o wybranie algorytmu, po czym zwraca ten algorytm do funkcji 
 wybierz_algorytm() {
-    echo ...
+
+    local algorytm=$(zenity --list --radiolist --column="Wybror" --column="Algorytm" \
+        --title="Wybierz algorytm" --text="Wybierz algorytm przy pomocy ktorego zaszyfrowany bedzie plik" --width=500 --height=700 \
+        TRUE "aes-256-cbc" \
+        FALSE "aes-192-cbc" \
+        FALSE "aes-128-cbc" \
+        FALSE "aes-256-ctr" \
+        FALSE "aes-128-ctr" \
+        FALSE "camellis-256-cbc" \
+        FALSE "des3") || blad "Nie wybrano algorytmu!"
+    [[ -z "$algorytm" ]] && blad "Algorytm nie moze byc pusty."
+
+    echo "$algorytm"
 }
 
 #szyfrowanie pojedynczego pliku
 szyfruj() {
-    local algorytm=$1
-    
     #wybieranie konkretnego pliku przy pomocy zenity
     plik=$(zenity --file-selection --title="Wybierz plik ktory chcesz zaszyfrowac" || blad "Blad przy wybieraniu pliku")
-    # Haslo
-    haslo=$(zenity --password --title="Haslo do szyfrowania/deszyfrowania") || blad "Nie wprowadzono hasla."
-    [[ -z "$haslo" ]] && blad "Haslo nie moze byc puste."
+    
+    algorytm=$(wybierz_algorytm)
+    haslo=$(podaj_haslo)
     
     openssl enc -"$algorytm" -in "$plik" -out "${plik}.enc" -pass pass:"$haslo" &&
     zenity --info --text="Zaszyfrowano: ${plik}.enc"
@@ -50,12 +60,10 @@ szyfruj() {
 
 #deszyfrowanie pojedynczego pliku
 deszyfruj() {
-    local algorytm=$1
-
     plik=$(zenity --file-selection --title="Wybierz plik .enc do odszyfrowania" --file-filter="*.enc") || blad "Blad przy wybieraniu pliku"
-    # Haslo
-    haslo=$(zenity --password --title="Haslo do szyfrowania/deszyfrowania") || blad "Nie wprowadzono hasla."
-    [[ -z "$haslo" ]] && blad "Haslo nie moze byc puste."
+    
+    algorytm=$(wybierz_algorytm)
+    haslo=$(podaj_haslo)
     
     output="${plik%.enc}"
     openssl enc -d -"$algorytm" -in "$plik" -out "$output" -pass pass:"$haslo" &&
@@ -67,12 +75,10 @@ deszyfruj() {
 
 #szyfruje wszystkie pliki w wybranym folderze
 szyfruj_pliki() {
-    local algorytm=$1
-
     katalog=$(zenity --file-selection --directory --title="Wybierz katalog ktorego zawartosc ma byc zaszyfrowana") || blad "Blad przy wyborze katalogu"
-    # Haslo
-    haslo=$(zenity --password --title="Haslo do szyfrowania/deszyfrowania") || blad "Nie wprowadzono hasla."
-    [[ -z "$haslo" ]] && blad "Haslo nie moze byc puste."
+
+    algorytm=$(wybierz_algorytm)
+    haslo=$(podaj_haslo)
     
     #tutaj powinna byc dodana funkcjonalnosc typu szyfrowanie podkatalogow w wybranym katalogu
     for plik in "$katalog"/*; do
@@ -83,12 +89,10 @@ szyfruj_pliki() {
 
 #deszyfruje wszystkie pliki w wybranym folderze
 deszyfruj_pliki() {
-    local algorytm=$1
-    
     katalog=$(zenity --file-selection --directory --title="Wybierz katalog ktorego zawartosc ma byc zaszyfrowana") || blad "Blad przy wyborze katalogu"
-    # Haslo
-    haslo=$(zenity --password --title="Haslo do szyfrowania/deszyfrowania") || blad "Nie wprowadzono hasla."
-    [[ -z "$haslo" ]] && blad "Haslo nie moze byc puste."
+
+    algorytm=$(wybierz_algorytm)
+    haslo=$(podaj_haslo)
 
     for plik in "$katalog"/*; do
         output="${plik%.enc}"
@@ -99,12 +103,10 @@ deszyfruj_pliki() {
 
 #szyfruje caly katalog, najpierw pakujac go w jeden plik
 szyfruj_katalog() {
-    local algorytm=$1
-
     katalog=$(zenity --file-selection --directory --title="Wybierz katalog do szyfrowania") || blad "Blad przy wyborze katalogu"
-    # Haslo
-    haslo=$(zenity --password --title="Haslo do szyfrowania/deszyfrowania") || blad "Nie wprowadzono hasla."
-    [[ -z "$haslo" ]] && blad "Haslo nie moze byc puste."
+
+    algorytm=$(wybierz_algorytm)
+    haslo=$(podaj_haslo)
 
     nazwa=$(basename "$katalog")
     sciezka=$(dirname "$katalog")
@@ -143,6 +145,7 @@ deszyfruj_wzorzec() {
 blad() {
     zenity --error --text="$1"
     ./szyfrowanie.sh    #restartuje program
+    exit 0
 }
 
 obsluga_argumentow "$@"
@@ -182,22 +185,10 @@ case "$kategoria" in
     ;;
 esac
 
-# Algorytm
-algorytm=$(zenity --list --radiolist --column="Wybror" --column="Algorytm" \
-    --title="Wybierz algorytm" --text="Wybierz algorytm przy pomocy ktorego zaszyfrowany bedzie plik" --width=500 --height=700 \
-    TRUE "aes-256-cbc" \
-    FALSE "aes-192-cbc" \
-    FALSE "aes-128-cbc" \
-    FALSE "aes-256-ctr" \
-    FALSE "aes-128-ctr" \
-    FALSE "camellis-256-cbc" \
-    FALSE "des3") || blad "Nie wybrano algorytmu!"
-[[ -z "$algorytm" ]] && blad "Algorytm nie moze byc pusty."
-
 
 # na podstawie wyboru przechodzimy do roznych funkcji
 case "$opcja" in
-    "Szyfruj plik") szyfruj "$algorytm" ;;
+    "Szyfruj plik") szyfruj ;;
     "Deszyfruj plik") deszyfruj "$algorytm" ;;
     "Szyfruj pliki w katalogu") szyfruj_pliki "$algorytm" ;;
     "Deszyfruj pliki w katalogu") deszyfruj_pliki "$algorytm" ;;
