@@ -2,8 +2,10 @@
 # Nazwa skryptu: szyfrowanie.sh
 # Opis: szyfrowanie plikow
 # Autor: Bartosz Pacyga
-# Data: 2025-03-07
-# Wersja: 0.25
+# Data: 2025-03-09
+# Wersja: 0.3
+
+Wersja="0.3"
 
 #pyta uzytkownika czy plik powinien byc usuniety
 czy_usun_plik() {
@@ -16,13 +18,29 @@ czy_usun_plik() {
     fi
 }
 
+#funkcja prosi urzytkownia o podanie hasla urzywajac zenity, po czym zwraca je do funkcji
+podaj_haslo() {
+    haslo=$(zenity --password --title="Podaj haslo" \
+    --text="Podaj haslo ktore zostanie uzyte do szyfrowania/deszyfrowania") || blad "Nie wybrano hasla."
+
+    echo "$haslo"
+}
+
+#funkcja prosi urzytkownika o wybranie algorytmu, po czym zwraca ten algorytm do funkcji 
+wybierz_algorytm() {
+    echo ...
+}
+
 #szyfrowanie pojedynczego pliku
 szyfruj() {
     local algorytm=$1
-    local haslo=$2
-
+    
     #wybieranie konkretnego pliku przy pomocy zenity
     plik=$(zenity --file-selection --title="Wybierz plik ktory chcesz zaszyfrowac" || blad "Blad przy wybieraniu pliku")
+    # Haslo
+    haslo=$(zenity --password --title="Haslo do szyfrowania/deszyfrowania") || blad "Nie wprowadzono hasla."
+    [[ -z "$haslo" ]] && blad "Haslo nie moze byc puste."
+    
     openssl enc -"$algorytm" -in "$plik" -out "${plik}.enc" -pass pass:"$haslo" &&
     zenity --info --text="Zaszyfrowano: ${plik}.enc"
 
@@ -33,9 +51,12 @@ szyfruj() {
 #deszyfrowanie pojedynczego pliku
 deszyfruj() {
     local algorytm=$1
-    local haslo=$2
 
     plik=$(zenity --file-selection --title="Wybierz plik .enc do odszyfrowania" --file-filter="*.enc") || blad "Blad przy wybieraniu pliku"
+    # Haslo
+    haslo=$(zenity --password --title="Haslo do szyfrowania/deszyfrowania") || blad "Nie wprowadzono hasla."
+    [[ -z "$haslo" ]] && blad "Haslo nie moze byc puste."
+    
     output="${plik%.enc}"
     openssl enc -d -"$algorytm" -in "$plik" -out "$output" -pass pass:"$haslo" &&
     zenity --info --text="Odszyfrowano: $output"
@@ -47,9 +68,12 @@ deszyfruj() {
 #szyfruje wszystkie pliki w wybranym folderze
 szyfruj_pliki() {
     local algorytm=$1
-    losal haslo=$2
 
     katalog=$(zenity --file-selection --directory --title="Wybierz katalog ktorego zawartosc ma byc zaszyfrowana") || blad "Blad przy wyborze katalogu"
+    # Haslo
+    haslo=$(zenity --password --title="Haslo do szyfrowania/deszyfrowania") || blad "Nie wprowadzono hasla."
+    [[ -z "$haslo" ]] && blad "Haslo nie moze byc puste."
+    
     #tutaj powinna byc dodana funkcjonalnosc typu szyfrowanie podkatalogow w wybranym katalogu
     for plik in "$katalog"/*; do
         [[ -f "$plik" ]] && openssl enc -"$algorytm" -in "$plik" -out "${plik}.enc" -pass pass:"$haslo"
@@ -60,9 +84,12 @@ szyfruj_pliki() {
 #deszyfruje wszystkie pliki w wybranym folderze
 deszyfruj_pliki() {
     local algorytm=$1
-    local haslo=$2
     
     katalog=$(zenity --file-selection --directory --title="Wybierz katalog ktorego zawartosc ma byc zaszyfrowana") || blad "Blad przy wyborze katalogu"
+    # Haslo
+    haslo=$(zenity --password --title="Haslo do szyfrowania/deszyfrowania") || blad "Nie wprowadzono hasla."
+    [[ -z "$haslo" ]] && blad "Haslo nie moze byc puste."
+
     for plik in "$katalog"/*; do
         output="${plik%.enc}"
         [[ -f "$plik" ]] && openssl enc -d -"$algorytm" -in "$plik" -out "$output" -pass pass:"$haslo"
@@ -73,9 +100,11 @@ deszyfruj_pliki() {
 #szyfruje caly katalog, najpierw pakujac go w jeden plik
 szyfruj_katalog() {
     local algorytm=$1
-    local haslo=$2
 
     katalog=$(zenity --file-selection --directory --title="Wybierz katalog do szyfrowania") || blad "Blad przy wyborze katalogu"
+    # Haslo
+    haslo=$(zenity --password --title="Haslo do szyfrowania/deszyfrowania") || blad "Nie wprowadzono hasla."
+    [[ -z "$haslo" ]] && blad "Haslo nie moze byc puste."
 
     nazwa=$(basename "$katalog")
     sciezka=$(dirname "$katalog")
@@ -116,8 +145,28 @@ blad() {
     ./szyfrowanie.sh    #restartuje program
 }
 
+#Sprawdzanie opcji
+while [[ "$1" =~ ^- ]]; do
+    case "$1" in
+        -h|--help)
+            echo "Opcje:"
+            echo " -h, --help       Wyswietl pomoc"
+            echo " -v, --version    Wyswietla weersje programu"
+            exit 0 
+            ;;
+        -v|--version)
+            echo "$0 - wersja $Wersja"
+            exit 0
+            ;;
+        *)
+            echo "Nieznana opcja: $1"
+            echo "Uzyj -h lub --help, aby uzyskac pomoc."
+            exit 1
+            ;;
+    esac
+    shift
+done
 #MENU GLOWNE PROGRAMU
-
 #wybor sposobu dzialania programu
 kategoria=$(zenity --list --radiolist \
   --title="Wybierz tryb:" \
@@ -125,6 +174,10 @@ kategoria=$(zenity --list --radiolist \
   TRUE "Szyfrowanie" \
   FALSE "Deszyfrowanie" \
   FALSE "Wyjscie") || blad "Nie wybrano kategorii."
+
+haslo=$(podaj_haslo)
+echo "Haslo:"
+echo $haslo
 
 #wybor konkretnej opcji
 case "$kategoria" in
@@ -165,18 +218,15 @@ algorytm=$(zenity --list --radiolist --column="Wybror" --column="Algorytm" \
     FALSE "des3") || blad "Nie wybrano algorytmu!"
 [[ -z "$algorytm" ]] && blad "Algorytm nie moze byc pusty."
 
-# Haslo
-haslo=$(zenity --password --title="Haslo do szyfrowania/deszyfrowania") || blad "Nie wprowadzono hasla."
-[[ -z "$haslo" ]] && blad "Haslo nie moze byc puste."
 
 # na podstawie wyboru przechodzimy do roznych funkcji
 case "$opcja" in
-    "Szyfruj plik") szyfruj "$algorytm" "$haslo" ;;
-    "Deszyfruj plik") deszyfruj "$algorytm" "$haslo" ;;
-    "Szyfruj pliki w katalogu") szyfruj_pliki "$algorytm" "$haslo" ;;
-    "Deszyfruj pliki w katalogu") deszyfruj_pliki "$algorytm" "$haslo" ;;
-    "Szyfruj katalog") szyfruj_katalog "$algorytm" "$haslo" ;;
-    "Deszyfruj katalog") deszyfruj_katalog "$algorytm" "$haslo" ;;
-    "Szyfruj wg wzorca") szyfruj_wzorzec "$algorytm" "$haslo" ;;
-    "Deszyfruj wg wzorca") deszyfruj_wzorzec "$algorytm" "$haslo" ;;
+    "Szyfruj plik") szyfruj "$algorytm" ;;
+    "Deszyfruj plik") deszyfruj "$algorytm" ;;
+    "Szyfruj pliki w katalogu") szyfruj_pliki "$algorytm" ;;
+    "Deszyfruj pliki w katalogu") deszyfruj_pliki "$algorytm" ;;
+    "Szyfruj katalog") szyfruj_katalog "$algorytm" ;;
+    "Deszyfruj katalog") deszyfruj_katalog "$algorytm" ;;
+    "Szyfruj wg wzorca") szyfruj_wzorzec "$algorytm" ;;
+    "Deszyfruj wg wzorca") deszyfruj_wzorzec "$algorytm" ;;
 esac
