@@ -128,7 +128,48 @@ szyfruj_katalog() {
 
 #deszyfruje caly katalog, po czym rozpakowuje go (bo byl spakowany w funkcji szyfruj katalog)
 deszyfruj_katalog() {
-    echo "deszyfruje katalog ..."
+    #wybierz plik .enc
+    katalog=$(zenity --file-selection --title="Wybierz zaszyfrowany katalog (.enc)") || blad "Blad przy wyborze katalogu"
+    [[ ! -f "$katalog" ]] && blad "Katalog nie istnieje."
+
+    algorytm=$(wybierz_algorytm)
+    haslo=$(podaj_haslo)
+
+    #miejsce do ktorego bedzie odszyfrowany i rozpakowany folder
+    local sciezka="$(dirname "$katalog")"
+
+    #plik tymczasowy do rozpakowywania 
+    local rozszyfrowany=$(mktemp "/tmp/rozszyfrowany.XXXXXX")
+
+    #Deszyfrowanie do pliku tymczasoweg
+    if ! openssl enc -d -"$algorytm" -in "$katalog" -out "$rozszyfrowany" -pass pass:"$haslo"; then
+        rm -f "rozszyfrowany"
+        blad "Blad podczas rozszyfrowania pliku: $katalog"
+        return 1
+    fi
+
+    #rozpakowanie
+    if file "$rozszyfrowany" | grep -q "gzip compressed"; then
+        if ! tar -xzf "$rozszyfrowany" -C "$sciezka"; then
+            rm -f "rozszyfrowany"
+            blad "Blad podczas rozpakowania .tar.gz"
+            return 1
+        fi
+    elif file "$rozszyfrowany" | grep -q "Zip archive"; then
+        if ! unzip -q "$rozszyfrowany" -d "$sciezka"; then
+            rm -f "rozszyfrowany"
+            blad "Blad podczas rozszyfrowania pliku .zip"
+        return 1
+        fi
+    else
+        rm -f "$rozszyfrowany"
+        blad "Nieznany format archiwum"
+        return 1
+    fi
+
+    rm -f "$rozszyfrowany"
+
+    zenity --info --text="Katalog zostal odszyfrowany i rozpakowany w:\n$katalog_docelowy"
 }
 
 #szyfruje pliki wedlug wzorca
@@ -184,7 +225,6 @@ case "$kategoria" in
     exit 0
     ;;
 esac
-
 
 # na podstawie wyboru przechodzimy do roznych funkcji
 case "$opcja" in
