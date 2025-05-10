@@ -2,8 +2,8 @@
 # Nazwa skryptu: szyfrowanie.sh
 # Opis: szyfrowanie plikow
 # Autor: Bartosz Pacyga
-# Data: 2025-03-09
-# Wersja: 0.3
+# Data: 2025-03-10
+# Wersja: 0.4
 
 source ./args.sh
 
@@ -174,12 +174,45 @@ deszyfruj_katalog() {
 
 #szyfruje pliki wedlug wzorca
 szyfruj_wzorzec() {
-    echo "szyfruje wzorzec ..."
+    #wybor katalogu i wzorca przy pomocy ktorego beda szukane pliki
+    local katalog=$(zenity --file-selection --directory --title="Wybierz katalog w ktorym bedzie wyszukiwany wzorzec") || blad "Blad przy wyborze katalogu"
+    local wzorzec=$(zenity --entry --title="Wzorzec:" --text="Podac wzorzec np. \"*.txt\" lub \"dokument*.pdf\"") || blad "Blad przy wpisywaniu wzorca"
+
+    local algorytm=$(wybierz_algorytm)
+    local haslo=$(podaj_haslo)
+
+    #szuakanie plikow przy urzyciu find
+    local znalezione_pliki=($(find "$katalog" -type f -name "$wzorzec"))
+
+    [[ ${#znalezione_pliki[@]} -eq 0 ]] && blad "Nie znaleziono plikow pasujacych do tego wzorca!"
+
+    for plik in "${znalezione_pliki[@]}"; do
+        [[ -f "$plik" ]] && openssl enc -"$algorytm" -in "$plik" -out "${plik}.enc" -pass pass:"$haslo" && czy_usun_plik
+    done
+
+    zenity --info --text="Zaszyfrowano ${#znalezione_pliki[@]} plikow pasujacych do wzorca: $wzorzec"
 }
 
 #deszyfruje plik wedlug wzorca
 deszyfruj_wzorzec() {
-    echo "deszyfruje wzorzec ..."
+    #wybor katalogu i wzorca przy pomocy ktorego beda szukane pliki
+    local katalog=$(zenity --file-selection --directory --title="Wybierz katalog w ktorym bedzie wyszukiwany wzorzec") || blad "Blad przy wyborze katalogu"
+    local wzorzec=$(zenity --entry --title="Wzorzec:" --text="Podac wzorzec np. \"*.txt\" lub \"dokument*.pdf\"") || blad "Blad przy wpisywaniu wzorca"
+
+    local algorytm=$(wybierz_algorytm)
+    local haslo=$(podaj_haslo)
+    
+    #szuakanie plikow przy urzyciu find
+    local znalezione_pliki=($(find "$katalog" -type f -name "$wzorzec"))
+
+    [[ ${#znalezione_pliki[@]} -eq 0 ]] && blad "Nie znaleziono plikow pasujacych do tego wzorca!"
+
+    for plik in "${znalezione_pliki[@]}"; do
+        plik_deszyfrowany="${plik%.enc}"
+        [[ -f "$plik" ]] && openssl enc -d -"$algorytm" -in "$plik" -out "$plik_deszyfrowany" -pass pass:"$haslo" && rm "$plik"
+    done
+
+    zenity --info --text="Odszyfrowano ${#znalezione_pliki[@]} plikow pasujacych do wzorac: $wzorzec"
 }
 
 # Funkcja wyswietla przekazany do niej blad bledu

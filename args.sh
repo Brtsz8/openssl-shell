@@ -1,6 +1,6 @@
 #!/bin/bash
 
-Wersja="0.3"
+Wersja="0.4"
 
 #funkcja analizujaca dodatkowe opcje szyfrowanie.sh
 obsluga_argumentow() {
