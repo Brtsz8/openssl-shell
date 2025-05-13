@@ -13,7 +13,8 @@ czy_usun_plik() {
 
     zenity --question --text="Czy usunac plik: $plik?"
     if [[ $? -eq 0 ]]; then
-        rm "$plik"
+        #sprawdza czy plik istnieje i potem go usuwa
+        [[ -f "$plik" ]] && rm "$plik"            
         zenity --info --text="Usunieto: $plik"
     fi
 }
@@ -110,7 +111,7 @@ szyfruj_katalog() {
 
     nazwa=$(basename "$katalog")
     sciezka=$(dirname "$katalog")
-    archiwum="${sciezka}/${nazwa}.tar.gz"
+    archiwum=$(mktemp "/tmp/${nazwa}.tar.gz.XXXXXX")
     output="${archiwum}.enc"
 
     #spakowanie katalogu
@@ -187,7 +188,7 @@ szyfruj_wzorzec() {
     [[ ${#znalezione_pliki[@]} -eq 0 ]] && blad "Nie znaleziono plikow pasujacych do tego wzorca!"
 
     for plik in "${znalezione_pliki[@]}"; do
-        [[ -f "$plik" ]] && openssl enc -"$algorytm" -in "$plik" -out "${plik}.enc" -pass pass:"$haslo" && czy_usun_plik
+        [[ -f "$plik" ]] && openssl enc -"$algorytm" -in "$plik" -out "${plik}.enc" -pass pass:"$haslo" && czy_usun_plik "$plik"
     done
 
     zenity --info --text="Zaszyfrowano ${#znalezione_pliki[@]} plikow pasujacych do wzorca: $wzorzec"
@@ -209,7 +210,7 @@ deszyfruj_wzorzec() {
 
     for plik in "${znalezione_pliki[@]}"; do
         plik_deszyfrowany="${plik%.enc}"
-        [[ -f "$plik" ]] && openssl enc -d -"$algorytm" -in "$plik" -out "$plik_deszyfrowany" -pass pass:"$haslo" && rm "$plik"
+        [[ -f "$plik" ]] && openssl enc -d -"$algorytm" -in "$plik" -out "$plik_deszyfrowany" -pass pass:"$haslo" && czy_usun_plik "$plik"
     done
 
     zenity --info --text="Odszyfrowano ${#znalezione_pliki[@]} plikow pasujacych do wzorac: $wzorzec"
@@ -262,11 +263,13 @@ esac
 # na podstawie wyboru przechodzimy do roznych funkcji
 case "$opcja" in
     "Szyfruj plik") szyfruj ;;
-    "Deszyfruj plik") deszyfruj "$algorytm" ;;
-    "Szyfruj pliki w katalogu") szyfruj_pliki "$algorytm" ;;
-    "Deszyfruj pliki w katalogu") deszyfruj_pliki "$algorytm" ;;
-    "Szyfruj katalog") szyfruj_katalog "$algorytm" ;;
-    "Deszyfruj katalog") deszyfruj_katalog "$algorytm" ;;
-    "Szyfruj wg wzorca") szyfruj_wzorzec "$algorytm" ;;
-    "Deszyfruj wg wzorca") deszyfruj_wzorzec "$algorytm" ;;
+    "Deszyfruj plik") deszyfruj ;;
+    "Szyfruj pliki w katalogu") szyfruj_pliki ;;
+    "Deszyfruj pliki w katalogu") deszyfruj_pliki ;;
+    "Szyfruj katalog") szyfruj_katalog ;;
+    "Deszyfruj katalog") deszyfruj_katalog ;;
+    "Szyfruj wg wzorca") szyfruj_wzorzec ;;
+    "Deszyfruj wg wzorca") deszyfruj_wzorzec ;;
 esac
+
+trap 'echo "Przerwano. Czyszczenie..."; rm -f "$rozszyfrowany"; exit 1' INT
