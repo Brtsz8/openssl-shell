@@ -148,10 +148,19 @@ deszyfruj() {
 
 #szyfruje wszystkie pliki w wybranym folderze
 szyfruj_pliki() {
-    katalog=$(zenity --width="$WIDTH" --height="$HEIGHT" --file-selection --directory --title="Wybierz katalog ktorego zawartosc ma byc zaszyfrowana") || blad "Blad przy wyborze katalogu"
-
-    algorytm=$(wybierz_algorytm)
-    haslo=$(podaj_haslo)
+    local katalog
+    katalog=$(zenity --width="$WIDTH" --height="$HEIGHT" --file-selection --directory --title="Wybierz katalog ktorego zawartosc ma byc zaszyfrowana")
+    if [[ $? -ne 0 || -z "$katalog" ]]; then
+        blad "Nie wybrano katalogu."
+        return 1
+    fi
+    # wybor algorytmu
+    local algorytm=$(wybierz_algorytm)
+    [[ $? -ne 0 || -z "$algorytm" ]] && return 1
+    
+    # podanie hasla
+    local haslo=$(podaj_haslo)
+    [[ $? -ne 0 || -z "$haslo" ]] && return 1
     
     #tutaj powinna byc dodana funkcjonalnosc typu szyfrowanie podkatalogow w wybranym katalogu
     for plik in "$katalog"/*; do
@@ -162,10 +171,19 @@ szyfruj_pliki() {
 
 #deszyfruje wszystkie pliki w wybranym folderze
 deszyfruj_pliki() {
-    katalog=$(zenity --width="$WIDTH" --height="$HEIGHT" --file-selection --directory --title="Wybierz katalog ktorego zawartosc ma byc zaszyfrowana") || blad "Blad przy wyborze katalogu"
-
-    algorytm=$(wybierz_algorytm)
-    haslo=$(podaj_haslo)
+    local katalog
+    katalog=$(zenity --width="$WIDTH" --height="$HEIGHT" --file-selection --directory --title="Wybierz katalog ktorego zawartosc ma byc zaszyfrowana")
+    if [[ $? -ne 0 || -z "$katalog" ]]; then
+        blad "Nie wybrano katalogu."
+        return 1
+    fi
+    # wybor algorytmu
+    local algorytm=$(wybierz_algorytm)
+    [[ $? -ne 0 || -z "$algorytm" ]] && return 1
+    
+    # podanie hasla
+    local haslo=$(podaj_haslo)
+    [[ $? -ne 0 || -z "$haslo" ]] && return 1
 
     for plik in "$katalog"/*; do
         output="${plik%.enc}"
@@ -176,10 +194,19 @@ deszyfruj_pliki() {
 
 #szyfruje caly katalog, najpierw pakujac go w jeden plik
 szyfruj_katalog() {
-    katalog=$(zenity --width="$WIDTH" --height="$HEIGHT" --file-selection --directory --title="Wybierz katalog do szyfrowania") || blad "Blad przy wyborze katalogu"
-
-    algorytm=$(wybierz_algorytm)
-    haslo=$(podaj_haslo)
+    local katalog
+    katalog=$(zenity --width="$WIDTH" --height="$HEIGHT" --file-selection --directory --title="Wybierz katalog ktorego zawartosc ma byc zaszyfrowana")
+    if [[ $? -ne 0 || -z "$katalog" ]]; then
+        blad "Nie wybrano katalogu."
+        return 1
+    fi
+    # wybor algorytmu
+    local algorytm=$(wybierz_algorytm)
+    [[ $? -ne 0 || -z "$algorytm" ]] && return 1
+    
+    # podanie hasla
+    local haslo=$(podaj_haslo)
+    [[ $? -ne 0 || -z "$haslo" ]] && return 1
 
     nazwa=$(basename "$katalog")
     sciezka=$(dirname "$katalog")
@@ -201,12 +228,19 @@ szyfruj_katalog() {
 
 #deszyfruje caly katalog, po czym rozpakowuje go (bo byl spakowany w funkcji szyfruj katalog)
 deszyfruj_katalog() {
-    #wybierz plik .enc
-    katalog=$(zenity --width="$WIDTH" --height="$HEIGHT" --file-selection --title="Wybierz zaszyfrowany katalog (.enc)") || blad "Blad przy wyborze katalogu"
-    [[ ! -f "$katalog" ]] && blad "Katalog nie istnieje."
-
-    algorytm=$(wybierz_algorytm)
-    haslo=$(podaj_haslo)
+    local katalog
+    katalog=$(zenity --width="$WIDTH" --height="$HEIGHT" --file-selection --directory --title="Wybierz katalog ktorego zawartosc ma byc zaszyfrowana")
+    if [[ $? -ne 0 || -z "$katalog" ]]; then
+        blad "Nie wybrano katalogu."
+        return 1
+    fi
+    # wybor algorytmu
+    local algorytm=$(wybierz_algorytm)
+    [[ $? -ne 0 || -z "$algorytm" ]] && return 1
+    
+    # podanie hasla
+    local haslo=$(podaj_haslo)
+    [[ $? -ne 0 || -z "$haslo" ]] && return 1
 
     #miejsce do ktorego bedzie odszyfrowany i rozpakowany folder
     local sciezka="$(dirname "$katalog")"
@@ -248,11 +282,25 @@ deszyfruj_katalog() {
 #szyfruje pliki wedlug wzorca
 szyfruj_wzorzec() {
     #wybor katalogu i wzorca przy pomocy ktorego beda szukane pliki
-    local katalog=$(zenity --width="$WIDTH" --height="$HEIGHT" --file-selection --directory --title="Wybierz katalog w ktorym bedzie wyszukiwany wzorzec") || blad "Blad przy wyborze katalogu"
-    local wzorzec=$(zenity --width="$WIDTH" --height="$HEIGHT" --entry --title="Wzorzec:" --text="Podac wzorzec np. \"*.txt\" lub \"dokument*.pdf\"") || blad "Blad przy wpisywaniu wzorca"
-
+    local katalog
+    katalog=$(zenity --width="$WIDTH" --height="$HEIGHT" --file-selection --directory --title="Wybierz katalog w ktorym bedzie wyszukiwany wzorzec!")
+    if [[ $? -ne 0 || -z "$katalog" ]]; then
+        blad "Nie wybrano katalogu."
+        return 1
+    fi
+    local wzorzec
+    wzorzec=$(zenity --width="$WIDTH" --height="$HEIGHT" --entry --title="Wzorzec:" --text="Podac wzorzec np. \"*.txt\" lub \"dokument*.pdf\"")
+    if [[ $? -ne 0 || -z "$wzorzec" ]]; then
+        blad "Nie wybrano wzorca"
+        return 1
+    fi
+    # wybor algorytmu
     local algorytm=$(wybierz_algorytm)
+    [[ $? -ne 0 || -z "$algorytm" ]] && return 1
+    
+    # podanie hasla
     local haslo=$(podaj_haslo)
+    [[ $? -ne 0 || -z "$haslo" ]] && return 1
 
     #szuakanie plikow przy urzyciu find
     local znalezione_pliki=($(find "$katalog" -type f -name "$wzorzec"))
@@ -269,11 +317,25 @@ szyfruj_wzorzec() {
 #deszyfruje plik wedlug wzorca
 deszyfruj_wzorzec() {
     #wybor katalogu i wzorca przy pomocy ktorego beda szukane pliki
-    local katalog=$(zenity --width="$WIDTH" --height="$HEIGHT" --file-selection --directory --title="Wybierz katalog w ktorym bedzie wyszukiwany wzorzec") || blad "Blad przy wyborze katalogu"
-    local wzorzec=$(zenity --width="$WIDTH" --height="$HEIGHT" --entry --title="Wzorzec:" --text="Podac wzorzec np. \"*.txt\" lub \"dokument*.pdf\"") || blad "Blad przy wpisywaniu wzorca"
-
+    local katalog
+    katalog=$(zenity --width="$WIDTH" --height="$HEIGHT" --file-selection --directory --title="Wybierz katalog w ktorym bedzie wyszukiwany wzorzec!")
+    if [[ $? -ne 0 || -z "$katalog" ]]; then
+        blad "Nie wybrano katalogu."
+        return 1
+    fi
+    local wzorzec
+    wzorzec=$(zenity --width="$WIDTH" --height="$HEIGHT" --entry --title="Wzorzec:" --text="Podac wzorzec np. \"*.txt\" lub \"dokument*.pdf\"")
+    if [[ $? -ne 0 || -z "$wzorzec" ]]; then
+        blad "Nie wybrano wzorca"
+        return 1
+    fi
+    # wybor algorytmu
     local algorytm=$(wybierz_algorytm)
+    [[ $? -ne 0 || -z "$algorytm" ]] && return 1
+    
+    # podanie hasla
     local haslo=$(podaj_haslo)
+    [[ $? -ne 0 || -z "$haslo" ]] && return 1
     
     #szuakanie plikow przy urzyciu find
     local znalezione_pliki=($(find "$katalog" -type f -name "$wzorzec"))
